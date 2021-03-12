@@ -159,8 +159,33 @@ eg:
 
 一般的形式有如下几种:
 
-1xor 8位通用寄存器， 8位立即事
+12345678910111213xor 8位通用寄存器， 8位立即数, 例如： xor al, 0x02xor 8位通用寄存器，指向8位实际操作数的内存 例如xor cl , [0x0200]xor 8位通用寄存器， 8位通用寄存器,  例如 xor al, dlxor 16位通用寄存器， 16位立即数，例如 xor ax, 0xf044xor 16位通用寄存器，指向16位通用实际操作数的内存 例如 xor ax, [0x0200]xor 16位通用寄存器，16位通用寄存器，例如： xor ax, bxxor 指向8位实际操作数的内存地址， 8位立即数，例如 xor byte [0x0300], 0x05xor 指向8位实际操作数的内存地址，8位通用寄存器， 例如： xor   [0x0300], alxor 指向16位实际操作数的内存地址，16位立即数， 例如 xor word [0x0300], 0x0f00xor 指向16位实际操作数的内存地址，16位通用寄存器, 例如： xor  [0x0300], ax
 
+
+note 
+
+123mov bx, 0xor bx, bx# xor 的速度要比mov的速度快，在清0这个操作上。
+
+0x04 Add指令&emsp;加法指令需要两个操作数，目的操作数可以上8位或者16位的通用寄存器，或者指向8位或者16位实际操作数的内存地址。源操作数字可以是8位或者16位的通用寄存器，或者是指向8位或者16位的实际操作数的内存地址，也可以数立即数，但是不允许两个操作数同时为内存单元， 相加后结果保存在目的操作数里面。
+0x05 jmp指令&emsp; 使程序进入无线循环状态，
+1infi: jmp near infi
+
+
+near 关键字表示目标的位置依然在当前代码段里面。， 上面指令是让代码依旧转移到自己
+
+&emsp;jmp指令详解：
+
+绝对地址跳转: 操作数数段地址:偏移地址 ，这种情况下机器码为:0xEA
+相对近转移: jmp用near修饰
+
+&emsp; 绝对跳转：直接改写寄存器cs，和 ip 
+&emsp; 相对近转移：这种情况下操作码是0xE9 后面跟1个16位的操作数。这个操作数不是目标偏移地址，而是相对于当前指令的偏移量(以字节位单位),
+
+相对偏移量的计算: 标号(目标)的汇编地址-当前指令的汇编地址-当前指令的长度(3), ==&gt; 得到jmp near infi的实际操作数。 —–这个数编译阶段执行阶段 处理器会用指针寄存器(IP)的值+该指令的操作数+该指令的长度(3)
+
+0x06 主引导扇区的有效标志&emsp;主引导扇区的有效标志最后两个字节必须是: 0x05和0xAA
+完整代码如下:
+123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384mov ax, 0xb800mov es, axmov byte [es:0x00], &#39;L&#39;mov byte [es:0x01], 0x07mov byte [es:0x02], &#39;a&#39;mov byte [es:0x03], 0x07mov byte [es:0x04], &#39;b&#39;mov byte [es:0x05], 0x07mov byte [es:0x06], &#39;e&#39;mov byte [es:0x07], 0x07mov byte [es: 0x08], &#39;l&#39;mov byte [es: 0x09], 0x07mov byte [es:0x0a], &#39; &#39;mov byte [es:0x0b], 0x07mov byte [es:0x0c], &#39;O&#39;mov byte [es:0x0d], 0x07mov byte [es:0x0e], &#39;f&#39;mov byte [es:0x0f], 0x07mov byte [es:0x10], &#39;f&#39;mov byte [es:0x11], 0x07mov byte [es:0x12], &#39;e&#39;mov byte [es:0x13], 0x07mov byte [es:0x14], &#39;c&#39;mov byte [es:0x15], 0x07mov byte [es:0x16], &#39;t&#39;mov byte [es:0x17], 0x07mov byte [es: 0x18], &#39;;&#39;mov byte [es:0x19], 0x07mov ax, numbermov bx, 10mov cx, csmov ds, cxmov dx, 0div bx; 这里0x7c00 是因为当前段寄存器仍然位0，但是程序段是从0x7c00处开始的，并且声明的数据和代码段在同一个段里面。; 对于代码段没有影响，因为初始化是cs:0x0000, ip:0x7c00; 因为除数是10， 余数自然比10小，因此可以直接从dl 里面获取，mov [0x7c00 + number + 0x00], dlxor dx, dxdiv bxmov [0x7c00 + number + 0x01], dlxor dx, dxdiv bxmov [0x7c00 + number + 0x02], dlxor dx, dxdiv bxmov [0x7c00 + number + 0x03], dlxor dx, dxdiv bxmov [0x7c00 + number + 0x04], dlmov al, [0x7c00 + number + 0x04]add al , 0x30mov [es:0x1a], almov byte [es:0x1b], 0x04mov al, [0x7c00 + number + 0x03]add al, 0x30mov [es:0x1c], almov byte [es:0x1d], 0x04mov al, [0x7c00 + number + 0x02]add al, 0x30mov [es: 0x1e],almov byte [es: 0x1f], 0x04mov al, [0x7c00+number+ 0x01]add al, 0x30mov [es: 0x20], almov byte [es: 0x21], 0x04mov al, [0x7c00 + number + 0x00]add al, 0x30mov [es: 0x22], almov byte [es: 0x23], 0x04mov byte [es:0x24], &#39;D&#39;mov byte [es:0x25], 0x07infi: jmp near infinumber db 0,0,0,0,0times 203 db 0		  db 0x55, 0xaa  ; 或者dw 0xaa55
 
                         
                     </p>
