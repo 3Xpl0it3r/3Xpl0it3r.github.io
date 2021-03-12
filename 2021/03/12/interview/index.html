@@ -8,18 +8,18 @@
 
 
 
-    <meta name="keywords" content="操作系统,"/>
+    <meta name="keywords" content="面试题,"/>
 
 
 
-    <meta name="description" content="0x00 计算机的加电和复位&emsp;REST引脚——硬件初始化(将所有的内部寄存器初始化到一个预置状态).对于x86，复位使代码寄存器(CS)复位为0xFFFF,其他寄存器复位为0x0000(包括指针寄存器IP)
-&emsp;ROM,在8086中，占据内存空间顶端的额64kb(物理地址范围..."/>
+    <meta name="description" content="0x00 iintroduce&emsp;收集整理互联网上相关面试题
+0x01 字节电商123456789101112131415161718字节跳动电商一面时间：70min1. 介绍项目2. ``select(), poll(), epoll()`` 的区别定义3. Linux QPS怎么统..."/>
 
 
 <meta name="Robots" content="all">
 
 
-    <title>Hexo | 计算机启动过程</title>
+    <title>Hexo | interview</title>
 
 
 <link rel="icon" href="/images/favicon.ico">
@@ -69,31 +69,24 @@
         <section class="content global-width">
             <div class="main">
                 <article class="box post">
-    <div class="post-title align-center detail-title">计算机启动过程</div>
+    <div class="post-title align-center detail-title">interview</div>
     <div class="post-meta align-center">
         
-        <i class="fa fa-calendar"></i> <time>2021-03-10</time>
+        <i class="fa fa-calendar"></i> <time>2021-03-12</time>
         <span class="dotted">|</span>
         <i class="fa fa-user"></i> 
         
             
             
                 <i class="fa fa-tags"></i>
-                <a class="tag-none-link" href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" rel="tag">操作系统</a>
+                <a class="tag-none-link" href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" rel="tag">面试题</a>
             
         
     </div>
 
     <div class="post-content">
-        <h4 id="0x00-计算机的加电和复位"><a href="#0x00-计算机的加电和复位" class="headerlink" title="0x00 计算机的加电和复位"></a>0x00 计算机的加电和复位</h4><p>&emsp;<code>REST</code>引脚——硬件初始化(将所有的内部寄存器初始化到一个预置状态).<br><br>对于x86，复位使代码寄存器(CS)复位为<code>0xFFFF</code>,其他寄存器复位为<code>0x0000</code>(包括指针寄存器IP)</p>
-<p>&emsp;<code>ROM</code>,在8086中，占据内存空间顶端的额64kb(物理地址范围为0xF0000~0xFFFFF),这64kb 里面固化了开机指令。<code>DRAM</code>占据低端的640KB(物理地址范围0x00000-0x9FFFF), 中间的部分用作外围设备。[<em>由于8086初始化后cs=0xFFFF, IP=0x0000, 因此他第一条指令的地址在物理地址为0xFFFFF0处</em>，正好位于ROM里面。]</p>
-<p>&emsp;<code>JMP</code>指令，jmp指令会改变cs寄存器的内容和ip寄存器的内容。</p>
-<p>&emsp;<code>BIOS</code> –基本输入输出系统—用于硬件的诊断，检测，初始化。</p>
-<p>&emsp;<code>主引导扇区</code>—–硬盘的第一个扇区(0面0道1扇区)， <code>ROM-BIOS</code>会把主引导扇区的内容加载到<code>0x0000:0x7c00</code>处执行:<code>jmp 0x0000:0x7c000</code></p>
-<h4 id="0x01-主引导扇区"><a href="#0x01-主引导扇区" class="headerlink" title="0x01 主引导扇区"></a>0x01 主引导扇区</h4><p>&emsp;主引导扇区总共有512个字节，最后两个字节为<code>0x55</code>和<code>0xAA</code>,检测通过—–<code>jmp 0x0000:0x7c00</code> 跳转到那里继续执行。<br>&emsp;主引导扇区代码作用：启动操作系统，计算出它所在硬盘的位置，然后将操作系统自举代码加载到内存里面，用jmp指令跳转到那里继续执行，直到操作系统完全起来。</p>
-<h4 id="0x02-显卡现存"><a href="#0x02-显卡现存" class="headerlink" title="0x02 显卡现存"></a>0x02 显卡现存</h4><p>&emsp;显卡-控制显示内容/控制显示器的显示方式.</p>
-<p>&emsp;显卡的两种工作模式「1:文本模式  2:图像模式」&lt;在不通的模式下，显卡对内容的解释是不同的&gt;</p>
-<p>&emsp;加电自检后，显卡会把自几初始化到<code>80 * 25</code>的文本模式.(这种模式下，可以显示25行，80个字符)，<code>0xB8000-0XBFFFF</code>这段物理地址留给显卡。</p>
+        <h4 id="0x00-iintroduce"><a href="#0x00-iintroduce" class="headerlink" title="0x00 iintroduce"></a>0x00 iintroduce</h4><p>&emsp;收集整理互联网上相关面试题</p>
+<h4 id="0x01-字节电商"><a href="#0x01-字节电商" class="headerlink" title="0x01 字节电商"></a>0x01 字节电商</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">字节跳动电商一面</span><br><span class="line"></span><br><span class="line">时间：70min</span><br><span class="line"></span><br><span class="line">1. 介绍项目</span><br><span class="line">2. ``select(), poll(), epoll()`` 的区别定义</span><br><span class="line">3. Linux QPS怎么统计？</span><br><span class="line">4. CSRF攻击原理、防范</span><br><span class="line">5. 四次挥手、time_wait的意义</span><br><span class="line">6. 进程和线程、Goroutine概念</span><br><span class="line">7. Golang map的扩容</span><br><span class="line">8. gRPC原理、几种模式？</span><br><span class="line">9. MySQL聚簇索引和非聚簇索引</span><br><span class="line">10. MySQL为何要用自增主键</span><br><span class="line">11. 什么是B+树</span><br><span class="line">12. 事务隔离机制、可重复读实现</span><br><span class="line">13. 手撕LRU</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
     </div>
 </article>
