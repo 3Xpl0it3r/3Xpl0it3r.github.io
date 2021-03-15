@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+
+
+
+
+    <meta name="keywords" content="go,"/>
+
+
+
+    <meta name="description" content="0x00 内存管理&emsp;go变量声明存在两部分:
+
+Heap: 全局存储空间, 由runtime来管理，这部分区域是可以共享的, 生命周期由gc来管理, 对象可以被其他函数访问到(通过指针方式)
+Stack: 局部变量存储，生命周期由对应的函数来管理，并且只能被这个函数内部来访问到，没有..."/>
+
+
+<meta name="Robots" content="all">
+
+
+    <title>l0calh0st | golang 逃逸机制</title>
+
+
+<link rel="icon" href="/images/favicon.ico">
+
+<link rel="stylesheet" href="/css/font-awesome.min.css">
+
+
+<link rel="stylesheet" href="/css/atom-one-dark.css">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+<script src="/js/highlight.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+<body>
+    <div class="main-container">
+        <header class="header">
+    <div class="global-width">
+        <nav class="nav-box">
+            
+                <a class="nav-item" href="/"
+                
+                >主页</a>
+            
+                <a class="nav-item" href="/archive"
+                
+                >归档</a>
+            
+                <a class="nav-item" href="/category"
+                
+                >分类</a>
+            
+                <a class="nav-item" href="/label"
+                
+                >标签</a>
+            
+                <a class="nav-item" href="/about"
+                
+                >关于</a>
+            
+        </nav>
+    </div>
+</header>
+
+        <section class="content global-width">
+            <div class="main">
+                <article class="box post">
+    <div class="post-title align-center detail-title">golang 逃逸机制</div>
+    <div class="post-meta align-center">
+        
+        <i class="fa fa-calendar"></i> <time>2021-03-15</time>
+        <span class="dotted">|</span>
+        <i class="fa fa-user"></i> 
+        
+            
+            
+                <i class="fa fa-tags"></i>
+                <a class="tag-none-link" href="/tags/go/" rel="tag">go</a>
+            
+        
+    </div>
+
+    <div class="post-content">
+        <h4 id="0x00-内存管理"><a href="#0x00-内存管理" class="headerlink" title="0x00 内存管理"></a>0x00 内存管理</h4><p>&emsp;go变量声明存在两部分:</p>
+<ul>
+<li>Heap: 全局存储空间, 由runtime来管理，这部分区域是可以共享的, 生命周期由gc来管理, 对象可以被其他函数访问到(通过指针方式)</li>
+<li>Stack: 局部变量存储，生命周期由对应的函数来管理，并且只能被这个函数内部来访问到，没有gc。</li>
+</ul>
+<blockquote>
+<p><em>一般放在stack里面性能要比heap速度快的多得多,所以尽可能的将对象放到stack里面</em><br><em>而go逃逸是在编译阶段分析对象，当一个在stack里面声明的一个variable试图被分配到heap里面，这就发生了逃逸，逃逸分析的目的是为了尽可能的将对象分配在stack里面，而不是heap上，这两者性能相差非常大</em><br><em>分配在stack里面的variable是由function本身来管理，而分配在heap上面的对象是由runtime来管理，这个里面还涉及到一些列的管理机制</em></p>
+</blockquote>
+<blockquote>
+<p>测试例子<br><img src="/2021/03/15/golang-escape/0x00benchmark.jpeg?200*200" alt="test"><br>测试结果<br><img src="/2021/03/15/golang-escape/0x02test_result.jpeg" alt="result"></p>
+</blockquote>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;testing&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> T <span class="keyword">struct</span> &#123;</span><br><span class="line">	X [<span class="number">10</span> * <span class="number">1000</span> * <span class="number">1000</span>]<span class="keyword">byte</span>   <span class="comment">// 最大只能分配10mb, 并且当试图生命一个超过10MB的对象的时候，也会发生逃逸现象</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> global <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkAllocOnHeap</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">	b.ReportAllocs()</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">		global = &amp;T&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">BenchmarkAllocOnStack</span><span class="params">(b *testing.B)</span></span> &#123;</span><br><span class="line">	b.ReportAllocs()</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">		local := T&#123;&#125;</span><br><span class="line">		_ = local</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">➜  demo go <span class="built_in">test</span> -cpu 1,2,4,8,16 -bench=. demo_test.go</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">cpu: Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz</span><br><span class="line">BenchmarkAllocOnHeap        	    1467	    815408 ns/op	10002432 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-2      	    1532	    810348 ns/op	10002432 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-4      	    1410	    834213 ns/op	10002434 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-16     	    1410	    862156 ns/op	10002435 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack       	1000000000	         0.3225 ns/op	       0 B/op	       0 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-2     	1000000000	         0.3128 ns/op	       0 B/op	       0 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-4     	1000000000	         0.3148 ns/op	       0 B/op	       0 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-8     	1000000000	         0.3148 ns/op	       0 B/op	       0 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-16    	1000000000	         0.3125 ns/op	       0 B/op	       0 allocs/op</span><br><span class="line">PASS</span><br><span class="line">ok  	command-line-arguments	10.722s</span><br><span class="line">➜  demo vim demo_test.go</span><br><span class="line"><span class="comment"># 下面例子是例子设置了X为12m大小, 这个里试图分配在stack里面的对象发生了逃逸</span></span><br><span class="line">➜  demo go <span class="built_in">test</span> -cpu 1,2,4,8,16 -bench=. demo_test.go</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">cpu: Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz</span><br><span class="line">BenchmarkAllocOnHeap        	    1306	    916347 ns/op	12001280 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-2      	    1254	    963093 ns/op	12001280 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-4      	    1263	    957514 ns/op	12001282 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-8      	    1236	    980502 ns/op	12001287 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnHeap-16     	    1168	    982603 ns/op	12001283 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack       	    1218	    992638 ns/op	12001280 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-2     	    1161	    980680 ns/op	12001280 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-4     	    1218	    950208 ns/op	12001286 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-8     	    1164	    996705 ns/op	12001290 B/op	       1 allocs/op</span><br><span class="line">BenchmarkAllocOnStack-16    	    1119	   1018326 ns/op	12001286 B/op	       1 allocs/op</span><br><span class="line">PASS</span><br><span class="line">ok  	command-line-arguments	14.127s</span><br></pre></td></tr></table></figure>
+<h4 id="0x01-go逃逸分析"><a href="#0x01-go逃逸分析" class="headerlink" title="0x01 go逃逸分析"></a>0x01 go逃逸分析</h4><p>&emsp;go逃逸分析是在编译阶段分析，它会试图将对象尽可能的保留在stack里面，如果variable分配在heap上面，那么就会发生逃逸.<br>&emsp;逃逸机制核心：一个对象处于heap还是stack和它是什么类型，以及是如何被创建出来的没有任何关系，只取决于它是如何被共享的/使用的。<br>&emsp;逃逸发生的条件:</p>
+<ul>
+<li>它的地址可以别别的对象(例如a)通过<code>&amp;</code>取地址符号获取到</li>
+<li>对象a本身已经发生了逃逸 <blockquote>
+<p><code>当满足上面两个条件的时候就会发生逃逸</code></p>
+</blockquote>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 本质上是利用有向图和打分来判断对象是否要移动到heap上面</span></span><br><span class="line">1. construct locations</span><br><span class="line">2. construct edges</span><br><span class="line">3. Anylyze the build graph</span><br></pre></td></tr></table></figure>
+
+<h4 id="0x02-go逃逸的几种特殊规则"><a href="#0x02-go逃逸的几种特殊规则" class="headerlink" title="0x02 go逃逸的几种特殊规则"></a>0x02 go逃逸的几种特殊规则</h4><h5 id="0x00-大对象"><a href="#0x00-大对象" class="headerlink" title="0x00 大对象"></a>0x00 大对象</h5><ul>
+<li>显示声明的对象超过10m——发生逃逸</li>
+<li>通过new/make 声明的对象超过64kb ——发生逃逸</li>
+</ul>
+<p><img src="/2021/03/15/golang-escape/0x03.png" alt="case"><br><img src="/2021/03/15/golang-escape/0x03result.png" alt="result"></p>
+<h5 id="0x01-slice"><a href="#0x01-slice" class="headerlink" title="0x01 slice"></a>0x01 slice</h5><p>&emsp;如果capacity是在编译期间无法确定的值，在这种情况下会发生逃逸<br><img src="/2021/03/15/golang-escape/0x04.jpeg" alt="case"><br><img src="/2021/03/15/golang-escape/0x04result.png" alt="result"></p>
+<h5 id="0x02-map"><a href="#0x02-map" class="headerlink" title="0x02 map"></a>0x02 map</h5><p>&emsp;<code>map</code>是一个比较特殊的例子</p>
+<ul>
+<li>map本身是存放在stack里面的</li>
+<li>任何变量只要被map的key或者value引用到(by reference/by pointer),那么这个变量就会发生逃逸, 不管map本身是不是已经逃逸.</li>
+</ul>
+<p><img src="/2021/03/15/golang-escape/0x05.jpeg" alt="case"><br><img src="/2021/03/15/golang-escape/0x05result.jpeg" alt="result"></p>
+<h5 id="0x03-返回值"><a href="#0x03-返回值" class="headerlink" title="0x03 返回值"></a>0x03 返回值</h5><p>&emsp;如果返回值是指针类型，那么他们就会发生逃逸，如果返回类型是map或者slice,那么他们也会发生逃逸</p>
+<p><img src="/2021/03/15/golang-escape/0x06.jpeg" alt="case"><br><img src="/2021/03/15/golang-escape/0x06result.png" alt="result"></p>
+<h5 id="0x04-输入参数"><a href="#0x04-输入参数" class="headerlink" title="0x04 输入参数"></a>0x04 输入参数</h5><p>&emsp;如果输入形参有泄漏的情况，那么实参数就会发生逃逸</p>
+<blockquote>
+<p>一般input要不return安全的多，尽可能使用input，而不用return</p>
+</blockquote>
+<p><img src="/2021/03/15/golang-escape/0x07.png" alt="case"><br><img src="/2021/03/15/golang-escape/0x07result.png" alt="result"></p>
+<h5 id="0x05闭包函数"><a href="#0x05闭包函数" class="headerlink" title="0x05闭包函数"></a>0x05闭包函数</h5><p>&emsp;如果内层变量可以被外层通过指针方式引用到，那么也会发生逃逸</p>
+<p><img src="/2021/03/15/golang-escape/0x08.jpeg" alt="case"><br><img src="/2021/03/15/golang-escape/0x08result.png" alt="result"></p>
+<h4 id="0x03-结论"><a href="#0x03-结论" class="headerlink" title="0x03 结论"></a>0x03 结论</h4><ul>
+<li>尽可能少用指针</li>
+<li>变数尽可能通过传参方式，少用return方式</li>
+</ul>
+
+    </div>
+</article>
+            </div>
+            <div class="aside">
+    
+        <div class="box widget">
+    <div class="introduction">
+        <p><img src="/images/avatar.jpg" alt="head-sculpture" /></p>
+        <p class="name">
+            六神娃哈哈
+        </p>
+        <p class="slogan">劈材喂马，关心粮食和蔬菜。</p>
+    </div>
+</div>
+    
+        
+<div class="box widget">
+    <div class="title">Recent</div>
+    <ul class="item-box">
+        
+            
+                <li><a href="/2021/03/15/golang-escape/">golang 逃逸机制</a></li>
+            
+        
+            
+                <li><a href="/2021/03/15/%E5%A0%86%E6%A0%88/">堆栈</a></li>
+            
+        
+            
+                <li><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></li>
+            
+        
+            
+                <li><a href="/2021/03/12/interview/">interview</a></li>
+            
+        
+            
+                <li><a href="/2021/03/11/%E4%B8%BB%E5%BC%95%E5%AF%BC%E6%89%87%E5%8C%BA%E4%BB%A3%E7%A0%81/">主引导扇区代码</a></li>
+            
+        
+            
+                <li><a href="/2021/03/10/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">计算机启动过程</a></li>
+            
+        
+            
+                <li><a href="/2021/03/08/%E5%A4%84%E7%90%86%E5%99%A8%E5%86%85%E5%AD%98%E6%8C%87%E4%BB%A4/">处理器内存指令</a></li>
+            
+        
+            
+                <li><a href="/2021/03/01/hello-world/">hello-world</a></li>
+            
+        
+    </ul>
+</div>
+
+    
+        
+    
+        
+  <div class="box widget">
+    <div class="title">Archives</div>
+    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">8</span></li></ul>
+  </div>
+
+    
+        
+    <div class="box widget">
+        <div class="title">Tags</div>
+        <div class="item-box cloud-label">
+            <a href="/tags/go/" style="font-size: 10px;">go</a> <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 15px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 20px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
+        </div>
+    </div>
+
+    
+</div>
+        </section>
+        <footer class="footer">
+    <div class="global-width footer-box">
+        <div class="copyright">
+            <span>Copyright &copy; 2019</span>
+            <span class="dotted">|</span>
+            <span>Powered by <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a></span>
+            <span class="dotted">|</span>
+            <span>Theme by <a href="javascript:">Loren</a></span>
+            <span class="dotted">|</span>
+            <span><a target="_blank" rel="noopener" href="http://www.beian.miit.gov.cn">浙ICP备18016660号-1</a></span>
+        </div>
+    </div>
+</footer>
+    </div>
+
+<script>
+    hljs.initHighlightingOnLoad();
+</script>
+</body>
+</html>

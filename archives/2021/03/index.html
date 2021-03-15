@@ -70,6 +70,145 @@
                 
     
         <article class="box post post-item">
+            <div class="post-title"><a href="/2021/03/15/golang-escape/">golang 逃逸机制</a></div>
+            <div class="post-meta">
+                
+                <i class="fa fa-calendar"></i> <time>2021-03-15</time>
+                <span class="dotted">|</span>
+                <i class="fa fa-user"></i> 
+            </div>
+
+            <div class="post-excerpt">
+                <a href="/2021/03/15/golang-escape/">
+                    <p>
+                        
+                            0x00 内存管理&emsp;go变量声明存在两部分:
+
+Heap: 全局存储空间, 由runtime来管理，这部分区域是可以共享的, 生命周期由gc来管理, 对象可以被其他函数访问到(通过指针方式)
+Stack: 局部变量存储，生命周期由对应的函数来管理，并且只能被这个函数内部来访问到，没有gc。
+
+
+一般放在stack里面性能要比heap速度快的多得多,所以尽可能的将对象放到stack里面而go逃逸是在编译阶段分析对象，当一个在stack里面声明的一个variable试图被分配到heap里面，这就发生了逃逸，逃逸分析的目的是为了尽可能的将对象分配在stack里面，而不是heap上，这两者性能相差非常大分配在stack里面的variable是由function本身来管理，而分配在heap上面的对象是由runtime来管理，这个里面还涉及到一些列的管理机制
+
+
+测试例子测试结果
+
+123456789101112131415161718192021222324package mainimport &quot;testing&quot;type T struct &#123;	X [10 * 1000 * 1000]byte   // 最大只能分配10mb, 并且当试图生命一个超过10MB的对象的时候，也会发生逃逸现象&#125;var global interface&#123;&#125;func BenchmarkAllocOnHeap(b *testing.B) &#123;	b.ReportAllocs()	for i := 0; i &lt; b.N; i++ &#123;		global = &amp;T&#123;&#125;	&#125;&#125;func BenchmarkAllocOnStack(b *testing.B) &#123;	b.ReportAllocs()	for i := 0; i &lt; b.N; i++ &#123;		local := T&#123;&#125;		_ = local	&#125;&#125;
+123456789101112131415161718192021222324252627282930313233➜  demo go test -cpu 1,2,4,8,16 -bench=. demo_test.gogoos: darwingoarch: amd64cpu: Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHzBenchmarkAllocOnHeap        	    1467	    815408 ns/op	10002432 B/op	       1 allocs/opBenchmarkAllocOnHeap-2      	    1532	    810348 ns/op	10002432 B/op	       1 allocs/opBenchmarkAllocOnHeap-4      	    1410	    834213 ns/op	10002434 B/op	       1 allocs/opBenchmarkAllocOnHeap-16     	    1410	    862156 ns/op	10002435 B/op	       1 allocs/opBenchmarkAllocOnStack       	1000000000	         0.3225 ns/op	       0 B/op	       0 allocs/opBenchmarkAllocOnStack-2     	1000000000	         0.3128 ns/op	       0 B/op	       0 allocs/opBenchmarkAllocOnStack-4     	1000000000	         0.3148 ns/op	       0 B/op	       0 allocs/opBenchmarkAllocOnStack-8     	1000000000	         0.3148 ns/op	       0 B/op	       0 allocs/opBenchmarkAllocOnStack-16    	1000000000	         0.3125 ns/op	       0 B/op	       0 allocs/opPASSok  	command-line-arguments	10.722s➜  demo vim demo_test.go# 下面例子是例子设置了X为12m大小, 这个里试图分配在stack里面的对象发生了逃逸➜  demo go test -cpu 1,2,4,8,16 -bench=. demo_test.gogoos: darwingoarch: amd64cpu: Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHzBenchmarkAllocOnHeap        	    1306	    916347 ns/op	12001280 B/op	       1 allocs/opBenchmarkAllocOnHeap-2      	    1254	    963093 ns/op	12001280 B/op	       1 allocs/opBenchmarkAllocOnHeap-4      	    1263	    957514 ns/op	12001282 B/op	       1 allocs/opBenchmarkAllocOnHeap-8      	    1236	    980502 ns/op	12001287 B/op	       1 allocs/opBenchmarkAllocOnHeap-16     	    1168	    982603 ns/op	12001283 B/op	       1 allocs/opBenchmarkAllocOnStack       	    1218	    992638 ns/op	12001280 B/op	       1 allocs/opBenchmarkAllocOnStack-2     	    1161	    980680 ns/op	12001280 B/op	       1 allocs/opBenchmarkAllocOnStack-4     	    1218	    950208 ns/op	12001286 B/op	       1 allocs/opBenchmarkAllocOnStack-8     	    1164	    996705 ns/op	12001290 B/op	       1 allocs/opBenchmarkAllocOnStack-16    	    1119	   1018326 ns/op	12001286 B/op	       1 allocs/opPASSok  	command-line-arguments	14.127s
+0x01 go逃逸分析&emsp;go逃逸分析是在编译阶段分析，它会试图将对象尽可能的保留在stack里面，如果variable分配在heap上面，那么就会发生逃逸.&emsp;逃逸机制核心：一个对象处于heap还是stack和它是什么类型，以及是如何被创建出来的没有任何关系，只取决于它是如何被共享的/使用的。&emsp;逃逸发生的条件:
+
+它的地址可以别别的对象(例如a)通过&amp;取地址符号获取到
+对象a本身已经发生了逃逸 
+当满足上面两个条件的时候就会发生逃逸
+
+
+
+1234# 本质上是利用有向图和打分来判断对象是否要移动到heap上面1. construct locations2. construct edges3. Anylyze the build graph
+
+0x02 go逃逸的几种特殊规则0x00 大对象
+显示声明的对象超过10m——发生逃逸
+通过new/make 声明的对象超过64kb ——发生逃逸
+
+
+0x01 slice&emsp;如果capacity是在编译期间无法确定的值，在这种情况下会发生逃逸
+0x02 map&emsp;map是一个比较特殊的例子
+
+map本身是存放在stack里面的
+任何变量只要被map的key或者value引用到(by reference/by pointer),那么这个变量就会发生逃逸, 不管map本身是不是已经逃逸.
+
+
+0x03 返回值&emsp;如果返回值是指针类型，那么他们就会发生逃逸，如果返回类型是map或者slice,那么他们也会发生逃逸
+
+0x04 输入参数&emsp;如果输入形参有泄漏的情况，那么实参数就会发生逃逸
+
+一般input要不return安全的多，尽可能使用input，而不用return
+
+
+0x05闭包函数&emsp;如果内层变量可以被外层通过指针方式引用到，那么也会发生逃逸
+
+0x03 结论
+尽可能少用指针
+变数尽可能通过传参方式，少用return方式
+
+
+                        
+                    </p>
+                </a>
+            </div>
+
+            
+                <div class="post-footer">
+                    
+                    
+                        <i class="fa fa-tags"></i>
+                        <a class="tag-none-link" href="/tags/go/" rel="tag">go</a>
+                    
+                </div>
+            
+        </article>
+    
+
+    
+        <article class="box post post-item">
+            <div class="post-title"><a href="/2021/03/15/%E5%A0%86%E6%A0%88/">堆栈</a></div>
+            <div class="post-meta">
+                
+                <i class="fa fa-calendar"></i> <time>2021-03-15</time>
+                <span class="dotted">|</span>
+                <i class="fa fa-user"></i> 
+            </div>
+
+            <div class="post-excerpt">
+                <a href="/2021/03/15/%E5%A0%86%E6%A0%88/">
+                    <p>
+                        
+                            0x01 堆栈&emsp;Stack –一种数据结构，先进后出(Last In First Out)&emsp;和代码段(code Segment)，数据段(data Segment)一样，栈也被定义成一个内存段，堆栈段(Stack Segment), 由SS段寄存器指向.
+&emsp;堆栈的操作有两种,1. push 2. pop， 压栈和出栈只能在一端进行，需要要用堆栈指针寄存器(sp)指向下一个数据应该指向哪里，或者数据应该从哪开始出栈。
+
+push 压栈: PUSH的操作数可以是16位的寄存器，或者内存单元, [8086寄存器只运行压栈一次压一个字节，其他的可以压两个字节。。但是需要用修饰符来修复下]
+12push axpush word [label_a]
+
+在push的时候，首先将堆栈指针寄存器sp的内容减去操作数的字长;然后把要压栈的数据放到逻辑地址ss:sp所指向的内存位置(和其他的段操作一样SS左移四位，加上堆栈指针寄存器sp所提供的偏移地址)
+
+
+pop 出栈: pop的操作数可以是16为寄存器或者内存单元 
+
+pop指令执行的时候，处理器将堆栈寄存器ss的内容左移4位，在加上sp形成20位的内存地址，取出数；然后将sp的内容加上操作数的字长，以指向下一个堆栈的位置
+
+
+
+[需要注意pop/push指令都不会影响任何标志位寄存器]
+0x02 堆栈的初始化&emsp;初始化堆栈需要有两个连续的步骤1.初始化段寄存器(Stack Segment)和堆栈指针寄存器(Segment Pointer/ SP)
+0x03 相关指令&emsp;or指令会将OF和CF标志位设置为0，对SF,ZF,PF的影响依据计算结果而定，对AF 影响没有定义。
+&emsp;and指令将OF和CF标志位设置为0， 对SF,ZF,PF的影响依据计算结果而定，对AF影响没有定义。
+0x04 堆栈总结：&emsp;push指令操作数可以是16位寄存器或者指向16位的内存地址，push执行完之后，压入栈中的仅仅是该寄存器/内存的值，与该寄存器和内存就没有任何关系了。
+&emsp;堆栈本质上也是内存区域，之所以提供pop/push来提供访问是为了方便。
+123456789101112push ax; 下面等同做法sub sp, 2mov bx, spmov [ss:bx], axpop ax; 等同做法mov bx,spmov [es: bx], axadd sp ,2
+
+
+上面对比，push/pop指令更方便，并且这些有处理器自动来维护。
+
+&emsp;需要注意堆栈平衡,防止数据越界。
+
+                        
+                    </p>
+                </a>
+            </div>
+
+            
+                <div class="post-footer">
+                    
+                    
+                        <i class="fa fa-tags"></i>
+                        <a class="tag-none-link" href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" rel="tag">汇编语言</a>
+                    
+                </div>
+            
+        </article>
+    
+
+    
+        <article class="box post post-item">
             <div class="post-title"><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></div>
             <div class="post-meta">
                 
@@ -541,6 +680,14 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
     <ul class="item-box">
         
             
+                <li><a href="/2021/03/15/golang-escape/">golang 逃逸机制</a></li>
+            
+        
+            
+                <li><a href="/2021/03/15/%E5%A0%86%E6%A0%88/">堆栈</a></li>
+            
+        
+            
                 <li><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></li>
             
         
@@ -573,7 +720,7 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
         
   <div class="box widget">
     <div class="title">Archives</div>
-    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">6</span></li></ul>
+    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">8</span></li></ul>
   </div>
 
     
@@ -581,7 +728,7 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
     <div class="box widget">
         <div class="title">Tags</div>
         <div class="item-box cloud-label">
-            <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 20px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
+            <a href="/tags/go/" style="font-size: 10px;">go</a> <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 15px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 20px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
         </div>
     </div>
 
