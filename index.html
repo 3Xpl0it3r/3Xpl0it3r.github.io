@@ -70,6 +70,169 @@
                 
     
         <article class="box post post-item">
+            <div class="post-title"><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></div>
+            <div class="post-meta">
+                
+                <i class="fa fa-calendar"></i> <time>2021-03-14</time>
+                <span class="dotted">|</span>
+                <i class="fa fa-user"></i> 
+            </div>
+
+            <div class="post-excerpt">
+                <a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">
+                    <p>
+                        
+                            0x00 批量传送数据指令&emsp;movsb和movsw 用于将数据从内存中的一个地方批量的传送到另外一个地方。区别是:movsb 传送以字节位单位，movsw传送以字为单位。&emsp;movsb和movsw 执行时： 原始数据的段地址由DS指定,偏移地址由SI指定. 传送的目的地址由ES:DI 指定。传送字节数或者字数由CX指定。
+
+正向传送是由内存的低地址端到高地址端，反向传送是由内存的高地址端到低地址端, 正向传送每个字节/字，si/di都加1/2, 反向传送每个字节/字，si/di 都减1/2, 没传送一次CX的值都自动减1
+
+
+
+【如果需要用寄存器来提供偏移地址， 只能是BX,SI,BI,BP这四个寄存器来】，bp 寄存器(base address register)基地址寄存器，si源索引寄存器，di目标索引寄存器，之所以不用其他的寄存器，因为每个寄存器都又自己用途(ax寄存器累accumulator累加寄存器，cx计数器counter，dx 数据寄存器data)
+
+
+&emsp;相关标志寄存器
+
+ZF(ZeroFlag)零标志位，如果计算结果为0，标志”计算结果为0”这件事是真，zf会被设置为1， 否则设置为0.
+DF(DirectionFlag)方向标志位，用来控制movsw/movsb 传送方向，CLD指令可以将DF设置位0 ，SLD 将DF设置为1.
+
+&emsp;loop 循环指令
+
+loop 指令是一个相对近转移,操作码为0xE2, 后面跟一个字节的操作数
+
+
+编译阶段: loop后面标号的汇编地址-loop指令地址-loop指令的长度,
+loop指令在执行的时候会做一下两件事情:
+
+
+
+
+ 将寄存器cx的值减1
+判断cx的值是否为0， 不为0，继续转移到指定的位置执行，否则继续执行后面的指令。
+
+0x01 neg减法指令&emsp;neg指令带有一个操作数，操作数可以是内存单元，8位寄存器，16位寄存器， 作用是用0减去指定的操作数.
+0x02 扩展位指令&emsp;CWD(Cover Work to Double-Word)和CBW(Cover Byte to Word)
+
+cbw: 操作码：98，  作用将寄存器AL的符号为扩展到AX
+cwd: 操作码：99    作用将寄存器AX的符号为扩展到DX:AX
+
+
+看待数的时候，视角需要统一【sub/add 指定都考虑到了有符号和无符号的情况】
+
+12345sub ah,al; 上面一条指令等价于下面两条neg aladd ah ,al
+[一般情况下大部分的操作指令都能处理有符号整数，又能处理无符号的整数， 但是DIV和MUL除外，div(Unsigned Divied)无符号除法指令，同理乘法指令。]
+&emsp;针对又符号的提供了有符号的除法指令idiv
+
+当考虑使用有符号除法指令的时候需要考虑，当前寄存器是否存在溢出情况，以及扩展寄存器的时候需要做符号位扩展
+
+0x03 条件转移指令jns&emsp;Sign Flag符号位寄存器，很多逻辑运算符都会影响到这个寄存器，例如dec,如果计算结果的最高位为0，否则sf位为1.&emsp;jns 跳转指令，如果未设置符号位置，则跳转到后面标号的地方继续执行，否则继续执行下面的部分。
+0x04其他标志位和条件转移指令&emsp;PF奇偶标志位，当运算结果最低8位有偶数个1的比特，则PF=1,否则为0.&emsp;CF进位标志，如果最高位位有向前进位或者有错位的情况发生，则cf=1 否则为0.&emsp;OF溢出标志位，of标志位是假设用户在进有符号的的运算，如果超出了目标操作数所能容纳的范围，则OF=1,否则0f=0
+0x05 相关指令对标志位的影响
+add   OF,SF,ZF,AF,CF和pf的状态根据计算结果而定。
+and   OF=0,CF=0, 对sf,zf,pf的影响依据计算结果而定
+cbw   不影响任何标志位
+cld   DF=0, 对其他寄存器暂时没有定义
+cwd   不影响任何标志位
+dec   CF标志位不受影响，因为该指令一般在程序中用于循环计数，而且在循环体内通常有依赖cf标志的指令，因此不希望它干扰到cf位，对OF,SF,ZF,AF,PF的影响根据结果而定。
+div/idiv  对寄存器的影响暂时没有定义，o
+inc   CF不受影响，对其他的根据结果而定
+mov/movs  不影响任何标志位
+neg   如果操作数位0，，则cf=0, 否则cf=0, 对of,zf,sf,af,pf的影响依据计算结果而定
+std   DF=1 
+sub   OF,SF,ZF,AF,CF和pf的状态根据计算结果而定。
+xor   OF=0,CF=0, 对SF,ZF,PF的影响根据结果而定。对af没有定义。
+
+0x06条件转移指令
+jns   sf不为1，则跳转，否则不跳转
+js    sf为1，则跳转
+jnz   zf 不为1， 则跳转，否则跳转
+jz    zf为1跳转，否则不跳转
+jnc   cf不为1，则跳转
+jc    cf为1 跳转
+jnp   pf不为1， 跳转
+jp    pf为1， 跳转
+
+0x07 cmp 跳转指令&emsp;cmp指令只会影响标志位寄存器，不保存结果，cmp会影响到cf,of,sf,zf,pf标志位相关cmp指令说明如下
+
+
+
+比较结果
+描述
+指令
+相关标志位说明
+
+
+
+等于
+Equal
+je
+相减=0成立，要求ZF=1
+
+
+不等于
+Not Equal
+jne
+相减结果不为0， 要求zf=0
+
+
+大于
+Greater
+jg
+适合有符号数的比较要求:ZF=0(两数不同,故相减不为0),并且SF=OF(如果相减溢出后,则结果必须是负数,说明目的操作数大，如果相减没有溢出，则结果必然是正数，也表明目的操作数大)
+
+
+大于或者等于
+Greater or Equal
+jge
+适合有符号的比较，要求SF=OF)
+
+
+不大于
+Not Greater
+jng
+适合有符号的比较， 要求ZF=1(如果相同，则为1)或者SF!=OF(如果相减后溢出,则结果必然是正数，说明源操作数大,如果相减后没有溢出,则结果是负数，也说明源操作数大)
+
+
+不大于或者等于
+Not Greater or Equal
+jnge
+适合有符号的比较，要求SF!=OF
+
+
+小于
+less
+jl
+适合有符号的比较，等同于不大于等于
+
+
+……
+
+
+
+
+
+&emsp;一个特殊的条件转移:jcxz(jump if cx is zero), 
+0x08 nsam的$  和 $$ 标记&emsp;$代表当前行行首的标号，jmp near $代表当前行继续执行。$emsp;$$代表当前汇编节/段的起始汇编地址(如果程序没有定义节/段，则默认自成一个节/段)
+
+                        
+                    </p>
+                </a>
+            </div>
+
+            
+                <div class="post-footer">
+                    
+                    
+                        <i class="fa fa-tags"></i>
+                        <a class="tag-none-link" href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" rel="tag">汇编语言</a>
+                    
+                </div>
+            
+        </article>
+    
+
+    
+        <article class="box post post-item">
             <div class="post-title"><a href="/2021/03/12/interview/">interview</a></div>
             <div class="post-meta">
                 
@@ -378,6 +541,10 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
     <ul class="item-box">
         
             
+                <li><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></li>
+            
+        
+            
                 <li><a href="/2021/03/12/interview/">interview</a></li>
             
         
@@ -406,7 +573,7 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
         
   <div class="box widget">
     <div class="title">Archives</div>
-    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">5</span></li></ul>
+    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">6</span></li></ul>
   </div>
 
     
@@ -414,7 +581,7 @@ es段寄存器，当需要两个数据段寄存器的时候，es就会被使用�
     <div class="box widget">
         <div class="title">Tags</div>
         <div class="item-box cloud-label">
-            <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 15px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
+            <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 20px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
         </div>
     </div>
 

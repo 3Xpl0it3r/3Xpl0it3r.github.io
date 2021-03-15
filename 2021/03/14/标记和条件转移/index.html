@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+
+
+
+
+    <meta name="keywords" content="汇编语言,"/>
+
+
+
+    <meta name="description" content="0x00 批量传送数据指令&emsp;movsb和movsw 用于将数据从内存中的一个地方批量的传送到另外一个地方。区别是:movsb 传送以字节位单位，movsw传送以字为单位。&emsp;movsb和movsw 执行时： 原始数据的段地址由DS指定,偏移地址由SI指定. 传送的目的地址由E..."/>
+
+
+<meta name="Robots" content="all">
+
+
+    <title>l0calh0st | 标记和条件转移</title>
+
+
+<link rel="icon" href="/images/favicon.ico">
+
+<link rel="stylesheet" href="/css/font-awesome.min.css">
+
+
+<link rel="stylesheet" href="/css/atom-one-dark.css">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+<script src="/js/highlight.min.js"></script>
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+<body>
+    <div class="main-container">
+        <header class="header">
+    <div class="global-width">
+        <nav class="nav-box">
+            
+                <a class="nav-item" href="/"
+                
+                >主页</a>
+            
+                <a class="nav-item" href="/archive"
+                
+                >归档</a>
+            
+                <a class="nav-item" href="/category"
+                
+                >分类</a>
+            
+                <a class="nav-item" href="/label"
+                
+                >标签</a>
+            
+                <a class="nav-item" href="/about"
+                
+                >关于</a>
+            
+        </nav>
+    </div>
+</header>
+
+        <section class="content global-width">
+            <div class="main">
+                <article class="box post">
+    <div class="post-title align-center detail-title">标记和条件转移</div>
+    <div class="post-meta align-center">
+        
+        <i class="fa fa-calendar"></i> <time>2021-03-14</time>
+        <span class="dotted">|</span>
+        <i class="fa fa-user"></i> 
+        
+            
+            
+                <i class="fa fa-tags"></i>
+                <a class="tag-none-link" href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" rel="tag">汇编语言</a>
+            
+        
+    </div>
+
+    <div class="post-content">
+        <h4 id="0x00-批量传送数据指令"><a href="#0x00-批量传送数据指令" class="headerlink" title="0x00 批量传送数据指令"></a>0x00 批量传送数据指令</h4><p>&emsp;<code>movsb</code>和<code>movsw</code> 用于将数据从内存中的一个地方批量的传送到另外一个地方。区别是:<code>movsb</code> 传送以字节位单位，<code>movsw</code>传送以字为单位。<br>&emsp;<code>movsb</code>和<code>movsw</code> 执行时： 原始数据的段地址由<code>DS</code>指定,偏移地址由<code>SI</code>指定. 传送的目的地址由<code>ES:DI</code> 指定。传送字节数或者字数由<code>CX</code>指定。</p>
+<blockquote>
+<p><em>正向传送是由内存的低地址端到高地址端，反向传送是由内存的高地址端到低地址端, 正向传送每个字节/字，si/di都加1/2, 反向传送每个字节/字，si/di 都减1/2, 没传送一次CX的值都自动减1</em></p>
+</blockquote>
+<blockquote>
+<blockquote>
+<p>【如果需要用寄存器来提供偏移地址， 只能是<code>BX,SI,BI,BP</code>这四个寄存器来】，bp 寄存器(base address register)基地址寄存器，si源索引寄存器，di目标索引寄存器，之所以不用其他的寄存器，因为每个寄存器都又自己用途(ax寄存器累accumulator累加寄存器，cx计数器counter，dx 数据寄存器data)</p>
+</blockquote>
+</blockquote>
+<p>&emsp;相关标志寄存器</p>
+<ul>
+<li><code>ZF(ZeroFlag)</code>零标志位，如果计算结果为0，标志”计算结果为0”这件事是真，zf会被设置为1， 否则设置为0.</li>
+<li><code>DF(DirectionFlag)</code>方向标志位，用来控制movsw/movsb 传送方向，<code>CLD</code>指令可以将<code>DF</code>设置位0 ，<code>SLD</code> 将<code>DF</code>设置为1.</li>
+</ul>
+<p>&emsp;loop 循环指令</p>
+<blockquote>
+<p>loop 指令是一个相对近转移,操作码为<code>0xE2</code>, 后面跟一个字节的操作数</p>
+</blockquote>
+<ul>
+<li>编译阶段: <em>loop后面标号的汇编地址-loop指令地址-loop指令的长度,</em><blockquote>
+<p>loop指令在执行的时候会做一下两件事情:</p>
+</blockquote>
+</li>
+</ul>
+<ol>
+<li> 将寄存器cx的值减1</li>
+<li>判断cx的值是否为0， 不为0，继续转移到指定的位置执行，否则继续执行后面的指令。</li>
+</ol>
+<h4 id="0x01-neg减法指令"><a href="#0x01-neg减法指令" class="headerlink" title="0x01 neg减法指令"></a>0x01 neg减法指令</h4><p>&emsp;<code>neg</code>指令带有一个操作数，操作数可以是内存单元，8位寄存器，16位寄存器， 作用是用0减去指定的操作数.</p>
+<h4 id="0x02-扩展位指令"><a href="#0x02-扩展位指令" class="headerlink" title="0x02 扩展位指令"></a>0x02 扩展位指令</h4><p>&emsp;<code>CWD(Cover Work to Double-Word)</code>和<code>CBW(Cover Byte to Word)</code></p>
+<ul>
+<li><code>cbw</code>: 操作码：98，  作用将寄存器AL的符号为扩展到AX</li>
+<li><code>cwd</code>: 操作码：99    作用将寄存器AX的符号为扩展到DX:AX</li>
+</ul>
+<blockquote>
+<p><em>看待数的时候，视角需要统一</em><br>【sub/add 指定都考虑到了有符号和无符号的情况】</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sub ah,al</span><br><span class="line"></span><br><span class="line">; 上面一条指令等价于下面两条</span><br><span class="line">neg al</span><br><span class="line">add ah ,al</span><br></pre></td></tr></table></figure>
+<p>[一般情况下大部分的操作指令都能处理有符号整数，又能处理无符号的整数， 但是<code>DIV</code>和<code>MUL</code>除外，div(Unsigned Divied)无符号除法指令，同理乘法指令。]</p>
+<p>&emsp;针对又符号的提供了有符号的除法指令<code>idiv</code></p>
+<blockquote>
+<p><em>当考虑使用有符号除法指令的时候需要考虑，当前寄存器是否存在溢出情况，以及扩展寄存器的时候需要做符号位扩展</em></p>
+</blockquote>
+<h4 id="0x03-条件转移指令jns"><a href="#0x03-条件转移指令jns" class="headerlink" title="0x03 条件转移指令jns"></a>0x03 条件转移指令<code>jns</code></h4><p>&emsp;<code>Sign Flag</code>符号位寄存器，很多逻辑运算符都会影响到这个寄存器，例如<code>dec</code>,如果计算结果的最高位为0，否则sf位为1.<br>&emsp;<code>jns</code> 跳转指令，如果未设置符号位置，则跳转到后面标号的地方继续执行，否则继续执行下面的部分。</p>
+<h4 id="0x04其他标志位和条件转移指令"><a href="#0x04其他标志位和条件转移指令" class="headerlink" title="0x04其他标志位和条件转移指令"></a>0x04其他标志位和条件转移指令</h4><p>&emsp;<code>PF</code>奇偶标志位，当运算结果最低8位有偶数个1的比特，则PF=1,否则为0.<br>&emsp;<code>CF</code>进位标志，如果最高位位有向前进位或者有错位的情况发生，则cf=1 否则为0.<br>&emsp;<code>OF</code>溢出标志位，of标志位是假设用户在进有符号的的运算，如果超出了目标操作数所能容纳的范围，则OF=1,否则0f=0</p>
+<h4 id="0x05-相关指令对标志位的影响"><a href="#0x05-相关指令对标志位的影响" class="headerlink" title="0x05 相关指令对标志位的影响"></a>0x05 相关指令对标志位的影响</h4><ul>
+<li>add   OF,SF,ZF,AF,CF和pf的状态根据计算结果而定。</li>
+<li>and   OF=0,CF=0, 对sf,zf,pf的影响依据计算结果而定</li>
+<li>cbw   不影响任何标志位</li>
+<li>cld   DF=0, 对其他寄存器暂时没有定义</li>
+<li>cwd   不影响任何标志位</li>
+<li>dec   CF标志位不受影响，因为该指令一般在程序中用于循环计数，而且在循环体内通常有依赖cf标志的指令，因此不希望它干扰到cf位，对OF,SF,ZF,AF,PF的影响根据结果而定。</li>
+<li>div/idiv  对寄存器的影响暂时没有定义，o</li>
+<li>inc   CF不受影响，对其他的根据结果而定</li>
+<li>mov/movs  不影响任何标志位</li>
+<li>neg   如果操作数位0，，则cf=0, 否则cf=0, 对of,zf,sf,af,pf的影响依据计算结果而定</li>
+<li>std   DF=1 </li>
+<li>sub   OF,SF,ZF,AF,CF和pf的状态根据计算结果而定。</li>
+<li>xor   OF=0,CF=0, 对SF,ZF,PF的影响根据结果而定。对af没有定义。</li>
+</ul>
+<h4 id="0x06条件转移指令"><a href="#0x06条件转移指令" class="headerlink" title="0x06条件转移指令"></a>0x06条件转移指令</h4><ul>
+<li>jns   sf不为1，则跳转，否则不跳转</li>
+<li>js    sf为1，则跳转</li>
+<li>jnz   zf 不为1， 则跳转，否则跳转</li>
+<li>jz    zf为1跳转，否则不跳转</li>
+<li>jnc   cf不为1，则跳转</li>
+<li>jc    cf为1 跳转</li>
+<li>jnp   pf不为1， 跳转</li>
+<li>jp    pf为1， 跳转</li>
+</ul>
+<h4 id="0x07-cmp-跳转指令"><a href="#0x07-cmp-跳转指令" class="headerlink" title="0x07 cmp 跳转指令"></a>0x07 cmp 跳转指令</h4><p>&emsp;cmp指令只会影响标志位寄存器，不保存结果，cmp会影响到cf,of,sf,zf,pf标志位<br>相关cmp指令说明如下</p>
+<table>
+<thead>
+<tr>
+<th>比较结果</th>
+<th>描述</th>
+<th>指令</th>
+<th>相关标志位说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>等于</td>
+<td>Equal</td>
+<td>je</td>
+<td>相减=0成立，要求ZF=1</td>
+</tr>
+<tr>
+<td>不等于</td>
+<td>Not Equal</td>
+<td>jne</td>
+<td>相减结果不为0， 要求zf=0</td>
+</tr>
+<tr>
+<td>大于</td>
+<td>Greater</td>
+<td>jg</td>
+<td>适合有符号数的比较<br>要求:ZF=0(两数不同,故相减不为0),并且SF=OF(如果相减溢出后,则结果必须是负数,说明目的操作数大，如果相减没有溢出，则结果必然是正数，也表明目的操作数大)</td>
+</tr>
+<tr>
+<td>大于或者等于</td>
+<td>Greater or Equal</td>
+<td>jge</td>
+<td>适合有符号的比较，要求SF=OF)</td>
+</tr>
+<tr>
+<td>不大于</td>
+<td>Not Greater</td>
+<td>jng</td>
+<td>适合有符号的比较， 要求ZF=1(如果相同，则为1)或者SF!=OF(如果相减后溢出,则结果必然是正数，说明源操作数大,如果相减后没有溢出,则结果是负数，也说明源操作数大)</td>
+</tr>
+<tr>
+<td>不大于或者等于</td>
+<td>Not Greater or Equal</td>
+<td>jnge</td>
+<td>适合有符号的比较，要求SF!=OF</td>
+</tr>
+<tr>
+<td>小于</td>
+<td>less</td>
+<td>jl</td>
+<td>适合有符号的比较，等同于不大于等于</td>
+</tr>
+<tr>
+<td>……</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>&emsp;一个特殊的条件转移:<code>jcxz</code>(jump if cx is zero), </p>
+<h4 id="0x08-nsam的-和-标记"><a href="#0x08-nsam的-和-标记" class="headerlink" title="0x08 nsam的$  和 $$ 标记"></a>0x08 nsam的$  和 $$ 标记</h4><p>&emsp;<code>$</code>代表当前行行首的标号，<code>jmp near $</code>代表当前行继续执行。<br>$emsp;<code>$$</code>代表当前汇编节/段的起始汇编地址(如果程序没有定义节/段，则默认自成一个节/段)</p>
+
+    </div>
+</article>
+            </div>
+            <div class="aside">
+    
+        <div class="box widget">
+    <div class="introduction">
+        <p><img src="/images/avatar.jpg" alt="head-sculpture" /></p>
+        <p class="name">
+            六神娃哈哈
+        </p>
+        <p class="slogan">劈材喂马，关心粮食和蔬菜。</p>
+    </div>
+</div>
+    
+        
+<div class="box widget">
+    <div class="title">Recent</div>
+    <ul class="item-box">
+        
+            
+                <li><a href="/2021/03/14/%E6%A0%87%E8%AE%B0%E5%92%8C%E6%9D%A1%E4%BB%B6%E8%BD%AC%E7%A7%BB/">标记和条件转移</a></li>
+            
+        
+            
+                <li><a href="/2021/03/12/interview/">interview</a></li>
+            
+        
+            
+                <li><a href="/2021/03/11/%E4%B8%BB%E5%BC%95%E5%AF%BC%E6%89%87%E5%8C%BA%E4%BB%A3%E7%A0%81/">主引导扇区代码</a></li>
+            
+        
+            
+                <li><a href="/2021/03/10/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/">计算机启动过程</a></li>
+            
+        
+            
+                <li><a href="/2021/03/08/%E5%A4%84%E7%90%86%E5%99%A8%E5%86%85%E5%AD%98%E6%8C%87%E4%BB%A4/">处理器内存指令</a></li>
+            
+        
+            
+                <li><a href="/2021/03/01/hello-world/">hello-world</a></li>
+            
+        
+    </ul>
+</div>
+
+    
+        
+    
+        
+  <div class="box widget">
+    <div class="title">Archives</div>
+    <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/03/">2021-03</a><span class="archive-list-count">6</span></li></ul>
+  </div>
+
+    
+        
+    <div class="box widget">
+        <div class="title">Tags</div>
+        <div class="item-box cloud-label">
+            <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 20px;">操作系统</a> <a href="/tags/%E6%B1%87%E7%BC%96%E8%AF%AD%E8%A8%80/" style="font-size: 20px;">汇编语言</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 10px;">面试题</a>
+        </div>
+    </div>
+
+    
+</div>
+        </section>
+        <footer class="footer">
+    <div class="global-width footer-box">
+        <div class="copyright">
+            <span>Copyright &copy; 2019</span>
+            <span class="dotted">|</span>
+            <span>Powered by <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a></span>
+            <span class="dotted">|</span>
+            <span>Theme by <a href="javascript:">Loren</a></span>
+            <span class="dotted">|</span>
+            <span><a target="_blank" rel="noopener" href="http://www.beian.miit.gov.cn">浙ICP备18016660号-1</a></span>
+        </div>
+    </div>
+</footer>
+    </div>
+
+<script>
+    hljs.initHighlightingOnLoad();
+</script>
+</body>
+</html>
