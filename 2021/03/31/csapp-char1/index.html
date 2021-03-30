@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="content-type" content="text/html; charset=utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="description" content=""><title>csapp-char1 | l0calh0st</title><link rel="stylesheet" type="text/css" href="/css/style.css?v=1.0.0"><link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/normalize.css/normalize.min.css"><link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/purecss/build/pure-min.min.css"><link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/purecss/build/grids-responsive-min.css"><link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"><script type="text/javascript" src="//cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script><link rel="icon" mask="" sizes="any" href="/favicon.ico"><link rel="Shortcut Icon" type="image/x-icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png"><script type="text/javascript" src="//cdn.jsdelivr.net/npm/clipboard/dist/clipboard.min.js"></script><script type="text/javascript" src="//cdn.jsdelivr.net/gh/codeseven/toastr/build/toastr.min.js"></script><link rel="stylesheet" href="//cdn.jsdelivr.net/gh/codeseven/toastr/build/toastr.min.css"><meta name="generator" content="Hexo 5.4.0"></head><body><div class="body_container"><div id="header"><div class="site-name"><h1 class="hidden">csapp-char1</h1><a id="logo" href="/.">l0calh0st</a><p class="description"></p></div><div id="nav-menu"><a class="current" href="/."><i class="fa fa-home"> Home</i></a><a href="/archives/"><i class="fa fa-archive"> Archive</i></a><a href="/about/"><i class="fa fa-user"> About</i></a><a href="/atom.xml"><i class="fa fa-rss"> RSS</i></a></div></div><div class="pure-g" id="layout"><div class="pure-u-1 pure-u-md-3-4"><div class="content_container"><div class="post"><h1 class="post-title">csapp-char1</h1><div class="post-meta">2021-03-31</div><div class="clear"><div class="toc-article" id="toc"><div class="toc-title">Contents</div><ol class="toc"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%BC%AB%E6%B8%B8"><span class="toc-number">1.</span> <span class="toc-text">操作系统漫游</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#0x00-%E4%BF%A1%E6%81%AF-%E4%BD%8D-%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="toc-number">2.</span> <span class="toc-text">0x00 信息&#x3D;位+上下文</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#0x01-%E7%A8%8B%E5%BA%8F%E8%A2%AB%E5%85%B6%E4%BB%96%E7%A8%8B%E5%BA%8F%E7%BF%BB%E8%AF%91%E6%88%90%E4%B8%8D%E5%90%8C%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">0x01 程序被其他程序翻译成不同的格式</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#0x02-%E5%A4%84%E7%90%86%E5%99%A8%E8%AF%BB%E5%8F%96%E5%B9%B6%E8%A7%A3%E9%87%8A%E5%86%85%E5%AD%98%E4%B8%AD%E6%8C%87%E4%BB%A4"><span class="toc-number">4.</span> <span class="toc-text">0x02 处理器读取并解释内存中指令</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#0x00-%E7%B3%BB%E7%BB%9F%E7%A1%AC%E4%BB%B6%E7%BB%84%E6%88%90"><span class="toc-number">4.1.</span> <span class="toc-text">0x00 系统硬件组成</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#0x01-%E8%BF%90%E8%A1%8Chelloworld%E7%A8%8B%E5%BA%8F"><span class="toc-number">4.2.</span> <span class="toc-text">0x01 运行helloworld程序</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#0x02-%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E7%9A%84%E9%87%8D%E8%A6%81"><span class="toc-number">4.3.</span> <span class="toc-text">0x02 高速缓存的重要</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#0x03-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%AE%A1%E7%90%86%E7%A1%AC%E4%BB%B6"><span class="toc-number">5.</span> <span class="toc-text">0x03 操作系统管理硬件</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#0x00-%E8%BF%9B%E7%A8%8B"><span class="toc-number">5.1.</span> <span class="toc-text">0x00 进程</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#0x00-%E7%BA%BF%E7%A8%8B"><span class="toc-number">5.2.</span> <span class="toc-text">0x00 线程</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#0x01-%E8%99%9A%E6%8B%9F%E5%86%85%E5%AD%98"><span class="toc-number">5.3.</span> <span class="toc-text">0x01 虚拟内存</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#0x03-%E6%96%87%E4%BB%B6"><span class="toc-number">5.4.</span> <span class="toc-text">0x03 文件</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#0x04-%E5%B9%B6%E5%8F%91%E5%92%8C%E5%B9%B6%E8%A1%8C"><span class="toc-number">6.</span> <span class="toc-text">0x04 并发和并行</span></a></li></ol></div></div><div class="post-content"><h4 id="操作系统漫游"><a href="#操作系统漫游" class="headerlink" title="操作系统漫游"></a>操作系统漫游</h4><p>&emsp;主要介绍了文件/源程序在磁盘上存储格式，以及源代码-可执行文件期间经过几次加工处理，可执行文件怎么被加载到内存里面执行。 用户无法直接操作CPU，无法直接操作硬盘。。这就需要操作系统的协助，操作系统主要让用户更简单的使用硬件，怎么让用户更好的使用硬件(硬件杂七杂八有很多中)，这个就需要操作系统对这些做个抽象， 有文件抽象(io设备，统一unix io调用)，虚拟内存(方便内存管理，内存分段)，进程(正在运行的程序的抽象), 以及CPU并发并行机介绍，CPU的一些歪门邪道技术实现了超线程，并发指令来加速程序的运行.</p>
+<h4 id="0x00-信息-位-上下文"><a href="#0x00-信息-位-上下文" class="headerlink" title="0x00 信息=位+上下文"></a>0x00 信息=位+上下文</h4><ul>
+<li>位(bit)：计算机世界里面所有的信息都是bit组成的(0/1), 关于这些0/1组合起来是什么就看怎么理解(8bit可以看成一个char,也可以看成一个bool)</li>
+<li>上下文：在不通的环境里面对字节序列的理解可能不一样，上下文可以理解成看待事物的角度，或者事物所处于的环境.</li>
+<li>文本文件： 只由ascii码构成的文件—文本文件</li>
+<li>二进制文件：非文本文件-统称二进制文件<blockquote>
+<p>由于ascii码只能表示256个字符，(只要有ascii表示不了的字符-就可以称为二进制文件)， 例如：图片，视频等这些都可以称为二进制文件</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="0x01-程序被其他程序翻译成不同的格式"><a href="#0x01-程序被其他程序翻译成不同的格式" class="headerlink" title="0x01 程序被其他程序翻译成不同的格式"></a>0x01 程序被其他程序翻译成不同的格式</h4><p>&emsp;主要叙述了源码文件–可执行程序之间，这个中间可能需要做很多处理，典型的c语言-可执行程序会经历如下四个阶段</p>
+<ul>
+<li>预处理：扫描<code>#</code>开头的命令，做相应的修改(在c里面例如把头文件对应的源码直接插入到程序文本中)</li>
+<li>编译阶段: 这个阶段是把预处理完的源码文件翻译成汇编语言的文件, 这个阶段将c代码转换成汇编代码(汇编指令/助记符,这个阶段的文件人类还是可以读得懂的)</li>
+<li>汇编阶段: 将编译后的汇编代码翻译成机器码(这个里面就是一堆数字字母了，例如E08，人类不可读了)</li>
+<li>链接阶段: 这个阶段将引用的第三方库以某种方式链接到我们object文件里面，然后生成可执行文件写到磁盘</li>
+</ul>
+<h4 id="0x02-处理器读取并解释内存中指令"><a href="#0x02-处理器读取并解释内存中指令" class="headerlink" title="0x02 处理器读取并解释内存中指令"></a>0x02 处理器读取并解释内存中指令</h4><h5 id="0x00-系统硬件组成"><a href="#0x00-系统硬件组成" class="headerlink" title="0x00 系统硬件组成"></a>0x00 系统硬件组成</h5><p><img src="/2021/03/31/csapp-char1/0x00.jpg"></p>
+<ul>
+<li>总线: 就是一组电子管道，总线传输的最小单位是<code>字</code>(字节是最基本的系统调用参数)</li>
+<li>I/O 设备: 需要和外界交互的都是io设备(除了主存，CPU，其他都可以称为io设备), io设备需要和io桥通讯需要一个适配器(io桥是固定的，io厂商却是千奇百怪的，一个固定的接口没有办法去适应无限的可能，因此要么厂商遵循统一的规范，要么自己提供适配器，这个适配器就是io控制器)</li>
+<li>主存: 动态随机存储芯片(动态-易丢失数据，断点数据全丢失，随机：读取数据和数据在内存中的位置无关)—内存可以看成一个长条的字节数组(address[address-length], 索引就是内存地址)， 字节数组说的时候，内存里面最小的存储单元是字节</li>
+<li>中央处理器: 主要用来执行指令， CPU通过读取PC的值，来执行程序，后面提到的上下文切换/进程调度也都是通过改变IP的值来做切换的，本质上程序没有变化。</li>
+</ul>
+<p>中央处理器的线性执行：</p>
+<blockquote>
+<p>cpu是线性执行-读取IP的值-加载到寄存器-&gt;alu–&gt;执行–&gt;更新IP寄存器的值</p>
+</blockquote>
+<p>中央处理器涉及到操作:</p>
+<ul>
+<li>加载:  从内存复制值到寄存器</li>
+<li>存储:  将寄存器的值存储到内存里面</li>
+<li>操作:  将寄存器的值复制到ALU里面，运算完在放到一个寄存器里面</li>
+<li>跳转: jump指令（更改IP寄存器)</li>
+</ul>
+<h5 id="0x01-运行helloworld程序"><a href="#0x01-运行helloworld程序" class="headerlink" title="0x01 运行helloworld程序"></a>0x01 运行helloworld程序</h5><p>&emsp;这个例子主要叙述了一件事情，任何数据通讯都要经过寄存器， 无论是io设备-内存，还是内存-io设备， 这个中间就导致了许多不必要的拷贝，所以出现了<code>DMA</code>技术</p>
+<h5 id="0x02-高速缓存的重要"><a href="#0x02-高速缓存的重要" class="headerlink" title="0x02 高速缓存的重要"></a>0x02 高速缓存的重要</h5><p>缓存的出现是因为存储的金字塔结构，这个需要平衡<br>内存充当了寄存器和磁盘的缓存<br>CPU也有自己的一级二级缓存</p>
+<h4 id="0x03-操作系统管理硬件"><a href="#0x03-操作系统管理硬件" class="headerlink" title="0x03 操作系统管理硬件"></a>0x03 操作系统管理硬件</h4><p>&emsp;这个部分讲诉了操作系统的职责:</p>
+<ul>
+<li>让用户更方便/高校的利用硬件</li>
+<li>又防止用户/应用程序滥用硬件<br>正所谓没有限制的自由等于没有自由</li>
+</ul>
+<p>&emsp;操作系统是用户和硬件之间的接口<br><img src="/2021/03/31/csapp-char1/0x02.jpg"></p>
+<p>&emsp;操作系统对硬件抽闲<br><img src="/2021/03/31/csapp-char1/0x03.jpg"></p>
+<h5 id="0x00-进程"><a href="#0x00-进程" class="headerlink" title="0x00 进程"></a>0x00 进程</h5><p>&emsp;正在运行的程序的抽象—进程<br>几个和进程有关的概念:<br>状态: 进程运行的所有需要的信息(寄存器，内存)<br>CPU控制权切换: PC由指向自己代码所在的内存位置，改为指向其他应用程序的代码位置—这就是程序控制权切换<br>上下文切换: cpu控制器发生切换，需要保存一堆信息(这些信息就是进程的上下文)</p>
+<h5 id="0x00-线程"><a href="#0x00-线程" class="headerlink" title="0x00 线程"></a>0x00 线程</h5><p>进程的多个执行流(goroutine也可以看成是go的线程)</p>
+<h5 id="0x01-虚拟内存"><a href="#0x01-虚拟内存" class="headerlink" title="0x01 虚拟内存"></a>0x01 虚拟内存</h5><p>每个进程看到的内存是一样的(都以为自己的宇宙的中心)<br>每个程序看到自己的内存起始位置也是固定的(偏移地址/汇编地址)<br><img src="/2021/03/31/csapp-char1/0x04.jpg"></p>
+<h5 id="0x03-文件"><a href="#0x03-文件" class="headerlink" title="0x03 文件"></a>0x03 文件</h5><p>在Linux里面一切皆文件，Linux里面对所有的io操作都统一封装了一个接口,unix/io调用</p>
+<h4 id="0x04-并发和并行"><a href="#0x04-并发和并行" class="headerlink" title="0x04 并发和并行"></a>0x04 并发和并行</h4><ul>
+<li>多核处理器<blockquote>
+<p>一个芯片上焊接了多个CPU</p>
+</blockquote>
+</li>
+<li>超线程技术<blockquote>
+<p>允许一个CPU可以执行多个控制器(在一个时钟周期里面可以切换到同的线程)—采用了多个备份寄存器来实现—–本质上在同一个时间，只能有一个线程在跑， 应该是加速技术</p>
+</blockquote>
+</li>
+<li>指令集并行<blockquote>
+<p>同时处理多个指令, 应该也是属于加速技术，和超线程类似使用了某些歪门邪道的技术。</p>
+</blockquote>
+</li>
+</ul>
+</div><div class="tags"><a href="/tags/csapp/"><i class="fa fa-tag"></i>csapp</a></div><div class="post-nav"><a class="next" href="/2021/03/28/go-bootstrap/">go启动流程分析</a></div></div></div></div><div class="pure-u-1-4 hidden_mid_and_down"><div id="sidebar"><div class="widget"><form class="search-form" action="//www.google.com/search" method="get" accept-charset="utf-8" target="_blank"><input type="text" name="q" maxlength="20" placeholder="Search"/><input type="hidden" name="sitesearch" value="https://3xpl0it3r.github.io"/></form></div><div class="widget"><div class="widget-title"><i class="fa fa-folder-o"> Categories</i></div></div><div class="widget"><div class="widget-title"><i class="fa fa-star-o"> Tags</i></div><div class="tagcloud"><a href="/tags/csapp/" style="font-size: 15px;">csapp</a> <a href="/tags/go/" style="font-size: 15px;">go</a> <a href="/tags/%E9%9D%A2%E8%AF%95%E9%A2%98/" style="font-size: 15px;">面试题</a> <a href="/tags/k8s/" style="font-size: 15px;">k8s</a></div></div><div class="widget"><div class="widget-title"><i class="fa fa-file-o"> Recent</i></div><ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2021/03/31/csapp-char1/">csapp-char1</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/28/go-bootstrap/">go启动流程分析</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/27/go-interface/">go-interface</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/22/program-k8s-1-introduce/">k8s编程-介绍</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/15/golang-escape/">golang 逃逸机制</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/12/interview/">interview</a></li><li class="post-list-item"><a class="post-list-link" href="/2021/03/01/hello-world/">hello-world</a></li></ul></div><div class="widget"><div class="widget-title"><i class="fa fa-external-link"> Links</i></div></div></div></div><div class="pure-u-1 pure-u-md-3-4"><div id="footer">Copyright © 2021 <a href="/." rel="nofollow">l0calh0st.</a> Powered by<a rel="nofollow" target="_blank" href="https://hexo.io"> Hexo.</a><a rel="nofollow" target="_blank" href="https://github.com/tufu9441/maupassant-hexo"> Theme</a> by<a rel="nofollow" target="_blank" href="https://github.com/pagecho"> Cho.</a></div></div></div><a class="show" id="rocket" href="#top"></a><script type="text/javascript" src="/js/totop.js?v=1.0.0" async></script><script type="text/javascript" src="//cdn.jsdelivr.net/gh/fancyapps/fancybox/dist/jquery.fancybox.min.js" async></script><script type="text/javascript" src="/js/fancybox.js?v=1.0.0" async></script><link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox/dist/jquery.fancybox.min.css"><script type="text/javascript" src="/js/copycode.js" successtext="Copy Successed!"></script><link rel="stylesheet" type="text/css" href="/css/copycode.css"><script type="text/javascript" src="/js/codeblock-resizer.js?v=1.0.0"></script><script type="text/javascript" src="/js/smartresize.js?v=1.0.0"></script></div></body></html>
